@@ -1,8 +1,12 @@
 <template>
   <div class="container">
     <div id="chat">
-      <div class="messages">
-        <div v-for="m in messages" :key="m.id" class="message_container">
+      <div class="chat_heading">
+        <span>Выйти</span>
+        <span>chat v{{ appData.version }}</span>
+      </div>
+      <div v-chat-scroll="{ smooth: true, notSmoothOnInit: true }" class="messages">
+        <div v-for="m in messages" :key="m.id" :ref="`message${m.id}`" class="message_container">
           <div :style="{ backgroundColor: m.userColor }" class="user_profile" />
           <div class="message">
             <span>{{ m.userName }}</span>
@@ -10,37 +14,44 @@
           </div>
         </div>
       </div>
-      <input placeholder="Введите сообщение" type="text">
+      <input @keypress.enter="sendMessage" v-model.trim="message" placeholder="Введите сообщение" type="text">
     </div>
   </div>
 </template>
 
 <script>
+import appData from '~/package.json'
+
 export default {
   data: () => {
     return {
-      messages: []
+      appData,
+
+      messages: [],
+      message: '',
+      test: 20,
+      firstTime: true
     }
   },
 
   mounted () {
     this.myWs = new WebSocket('ws://192.168.0.104:9000')
-    // обработчик проинформирует в консоль когда соединение установится
+  
     this.myWs.onopen = () => {
-      console.log('подключился')
+      console.log('Установлено подключение к websocket серверу')
     }
-    // обработчик сообщений от сервера
-    this.myWs.onmessage = (messages) => {
-      console.log('messages.data', JSON.parse(messages.data))
+  
+    this.myWs.onmessage = messages => {
       this.messages = JSON.parse(messages.data)
     }
   },
 
   methods: {
-    // функция для отправки echo-сообщений на сервер
-    wsSendEcho () {
-      // console.log('wsSendEcho')
-      this.myWs.send(JSON.stringify({ action: 'ECHO' }));
+    sendMessage () {
+      if (this.message && this.message !== '') {
+        this.myWs.send(JSON.stringify({ message: this.message }))
+        this.message = ''
+      }
     }
   }
 }
@@ -67,23 +78,40 @@ export default {
     flex-direction: column
     justify-content: flex-end
 
-    .messages
+    .chat_heading
       display: flex
-      flex-direction: column
+      justify-content: space-between
+      align-items: center
+      color: white
+      padding: 10px 15px
+      border-bottom: 1px solid #1a1a1c
+
+      span:nth-child(2)
+        font-size: 12px
+        opacity: .5
+
+    .messages
+      overflow: hidden
+      overflow-y: auto
       gap: 20px
+      height: 100%
       padding: 15px
+
       .message_container
         display: flex
         align-items: flex-start
         width: 100%
         gap: 10px
+
         .user_profile
           min-width: 30px
           min-height: 30px
           border-radius: 100px
+
         .message
           display: flex
           flex-direction: column
+          margin-bottom: 15px
           gap: 5px
           padding: 10px
           border-radius: 5px
