@@ -22,7 +22,14 @@ const onConnect = currentClient => {
 
   sendMessagesToAllClients()
 
-  currentClient.on('message', message => {
+  currentClient.on('message', msg => {
+    const message = JSON.parse(msg)
+    messages.push({
+      id: messages.reduce((acc, curr) => acc.id > curr.id ? acc : curr).id + 1,
+      userName: 'Первосвященник администратор',
+      userColor: '#eeccff',
+      message: message.message
+    })
     sendMessagesToAllClients()
   })
 
